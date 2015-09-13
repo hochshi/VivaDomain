@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="bower_components/oboe/dist/oboe-browser.js"></script>
+    <script src="bower_components/vivagraphjs/dist/vivagraph.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/angular-animate/angular-animate.js"></script>
+    <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+    <script src="bower_components/angular-oboe/src/angular-oboe.js"></script>
+    <script src="base_app.js"></script>
+    <link href="bower_components/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+    <link href="bower_components/angular-bootstrap/ui-bootstrap-csp.css" rel="stylesheet">
+    <style type='text/css'>
+        body {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+        vivagraph {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #content {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .actionsPanel {
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body ng-app="app">
+<div id="content" class="container-fluid" ng-controller="domainCtrl">
+    <!--<vivagraph data="graphData" set-vg="setVg(vg)">-->
+    <vivagraph viva-graph="vivaGraph">
+
+        <div class="col-sm-4 pull-right actionsPanel">
+            <div class="panel panel-default">
+
+                <div class="panel-heading">
+                    <strong class="">Control Panel</strong>
+                </div>
+
+                <div class="panel-body">
+                    <accordion close-others="{{false}}">
+                        <accordion-group heading="Graph controls">
+                            <div class="container-fluid">
+
+                                <form name="form" class="css-form" novalidate>
+                                    <div class="input-group">
+                                        <input type="text" ng-model="query.rmsd.lower" class="form-control"/>
+                                        <span class="input-group-addon">&le; RMSD &le;</span>
+                                        <input type="text" ng-model="query.rmsd.upper" class="form-control"/>
+                                    </div>
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" ng-model="query.psim.lower"/>
+                                        <span class="input-group-addon">&le; PSIM &le;</span>
+                                        <input type="text" class="form-control" ng-model="query.psim.upper"/>
+                                    </div>
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" ng-model="query.pid.lower"/>
+                                        <span class="input-group-addon">&le; PID &le;</span>
+                                        <input type="text" class="form-control" ng-model="query.pid.upper"/>
+                                    </div>
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" ng-model="query.length.lower"/>
+                                        <span class="input-group-addon">&le; Length &le;</span>
+                                        <input type="text" class="form-control" ng-model="query.length.upper"/>
+                                    </div>
+                                    <br>
+                                    <div class="input-group">
+                                        <button class="btn btn-primary" ng-click="reset()">Reset Graph</button>
+                                        <button class="btn btn-primary" ng-click="updateGraph(query)">Update graph</button>
+                                    </div>
+                                    <br>
+                                    <div class="input-group" ng-switch on="pauseRendering">
+                                        <button ng-switch-when='true' class="btn btn-primary" ng-click="pauseGraphRendering()">Pause animation</button>
+                                        <button ng-switch-when='false' class="btn btn-primary" ng-click="resumeGraphRendering()">Resume animation</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </accordion-group>
+                        <accordion-group heading="Preview pane">
+                            <strong class=""><span ng-bind="previewNodeID"></span></strong>
+                        </accordion-group>
+                    </accordion>
+                </div>
+
+                <div class="panel-footer">
+                </div>
+            </div>
+        </div>
+    </vivagraph>
+</div>
+</body>
+</html>

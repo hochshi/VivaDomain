@@ -1,0 +1,17 @@
+<div class="modal-header">
+    <h3 class="modal-title">Fetching data from server</h3>
+</div>
+<div class="modal-body">
+    <h4 class="panel-title"> Domains Processed</h4>
+    <progressbar max="counters.domainTotalCount()" value="counters.domainCount()">
+        <span style="color:white; white-space:nowrap;">{{counters.domainCount()}} / {{counters.domainTotalCount()}}</span>
+    </progressbar>
+    <br>
+    <h4 class="panel-title"> Links Processed</h4>
+    <progressbar max="counters.relationshipTotalCount()" value="counters.relationshipCount()">
+        <span style="color:white; white-space:nowrap;">{{counters.relationshipCount()}} / {{counters.relationshipTotalCount()}}</span>
+    </progressbar>
+</div>
+<div class="modal-footer">
+    <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+</div>

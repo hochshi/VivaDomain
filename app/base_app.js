@@ -60,20 +60,17 @@ app.service('neo4jQueryBuilder', [function() {
     };
 }]);
 
-app.factory('vivaGraphFactory', ['$q', function($q) {
+app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function($q, layoutSettings, archColors) {
     var vivaGraph = function () {
     //var vivaGraph = function ( container, neo4j_graph ) {
 
         this.container = undefined;
         this.graph = Viva.Graph.graph();
-        this.layout = Viva.Graph.Layout.forceDirected(this.graph, {
-            springLength : 30,
-            springCoeff : 0.0008,
-            dragCoeff : 0.01,
-            gravity : -1.2,
-            theta : 1
-        });
+        this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
         this.graphics = Viva.Graph.View.webglGraphics();
+        this.graphics.node(function (node) {
+            return new Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
+        });
         this.events = Viva.Graph.webglInputEvents(this.graphics, this.graph);
     };
 
@@ -117,8 +114,8 @@ app.service('OboeWrapper', ['Oboe', function(Oboe) {
     };
 }]);
 
-app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal',
-    function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal) {
+app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal', 'layoutSettings',
+    function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal, layoutSettings) {
 
     $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined};
     $scope.graphData = [];
@@ -277,3 +274,34 @@ app.directive('vivagraph', [function () {
         }
     }
 }]);
+
+app.value('archColors',{
+    'alpha arrays': '#000000',
+    'alpha bundles': '#00FF00',
+    'alpha superhelices': '#0000FF',
+    'alpha duplicates or obligate multimers': '#FF0000',
+    'alpha complex topology': '#01FFFE',
+    'beta barrels': '#FFA6FE',
+    'beta meanders': '#FFDB66',
+    'beta sandwiches': '#006401',
+    'beta duplicates or obligate multimers': '#010067',
+    'beta complex topology': '#95003A',
+    'a+b two layers': '#007DB5',
+    'a+b three layers': '#FF00F6',
+    'a+b four layers': '#FFEEE8',
+    'a+b complex topology': '#774D00',
+    'a+b duplicates or obligate multimers': '#90FB92',
+    'a/b barrels': '#0076FF',
+    'a/b three-layered sandwiches': '#D5FF00',
+    'mixed a+b and a/b': '#FF937E',
+    'few secondary structure elements': '#6A826C',
+    'extended segments': '#FF029D'
+});
+
+app.value('layoutSettings', {
+    springLength : 30,
+    springCoeff : 0.0008,
+    dragCoeff : 0.01,
+    gravity : -1.2,
+    theta : 1
+});

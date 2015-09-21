@@ -66,7 +66,9 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
 
         this.container = undefined;
         this.graph = Viva.Graph.graph();
-        this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
+        //this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
+        //this.layout = Viva.Graph.Layout.forceDirectedPause(this.graph, layoutSettings);
+        this.layout = Viva.Graph.Layout.pausableForceDirected(this.graph);
         this.graphics = Viva.Graph.View.webglGraphics();
         this.graphics.node(function (node) {
             return new Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
@@ -120,6 +122,7 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
     $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined};
     $scope.graphData = [];
     $scope.pauseRendering = true;
+    $scope.pauseLayout = true;
     $scope.previewNodeID = undefined;
     $scope.vivaGraph = new vivaGraphFactory();
 
@@ -129,12 +132,24 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         //$scope.vivaGraph.renderer.resume();
     };
 
+    $scope.pauseGraphLayout = function() {
+        $scope.vivaGraph.layout.pause();
+        $scope.pauseLayout = false;
+    };
+
+    $scope.resumeGraphLayout = function() {
+        $scope.vivaGraph.layout.resume();
+        $scope.pauseLayout = true;
+    };
+
     $scope.pauseGraphRendering = function() {
+        //$scope.vivaGraph.layout.setRunLayout(false);
         $scope.vivaGraph.renderer.pause();
         $scope.pauseRendering = false;
     };
 
     $scope.resumeGraphRendering = function() {
+        //$scope.vivaGraph.layout.setRunLayout(true);
         $scope.vivaGraph.renderer.resume();
         $scope.pauseRendering = true;
     };

@@ -91,6 +91,10 @@
                                         <button ng-switch-when='true' class="btn btn-primary" ng-click="pauseGraphRendering()">Pause animation</button>
                                         <button ng-switch-when='false' class="btn btn-primary" ng-click="resumeGraphRendering()">Resume animation</button>
                                     </div>
+                                    <div class="input-group" ng-switch on="pauseLayout">
+                                        <button ng-switch-when='true' class="btn btn-primary" ng-click="pauseGraphLayout()">Pause Layout</button>
+                                        <button ng-switch-when='false' class="btn btn-primary" ng-click="resumeGraphLayout()">Resume Layout</button>
+                                    </div>
                                 </form>
                             </div>
                         </accordion-group>

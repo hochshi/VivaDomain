@@ -1,6 +1,6 @@
 {
 archColors: {
-'alpha arrays': '#000000',
+'alpha arrays': '#FE8900',
 'alpha bundles': '#00FF00',
 'alpha superhelices': '#0000FF',
 'alpha duplicates or obligate multimers': '#FF0000',
@@ -22,7 +22,6 @@ archColors: {
 'extended segments': '#FF029D'
 },
 auxColors: [
-'#FE8900',
 '#7A4782',
 '#7E2DD2',
 '#85A900',

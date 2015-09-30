@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title></title>
     <script src="bower_components/oboe/dist/oboe-browser.js"></script>
-    <script src="bower_components/vivagraphjs/dist/vivagraph.js"></script>
+    <script src="components/vivagraphjs/vivagraph.js"></script>
+    <!--<script src="bower_components/vivagraphjs/dist/vivagraph.js"></script>-->
     <script src="bower_components/angular/angular.js"></script>
     <script src="bower_components/angular-resource/angular-resource.js"></script>
     <script src="bower_components/angular-animate/angular-animate.js"></script>
@@ -21,8 +22,6 @@
             overflow: hidden;
         }
         canvas {
-            width: 100%;
-            height: 100%;
             position: absolute;
         }
         vivagraph {
@@ -42,7 +41,6 @@
 </head>
 <body ng-app="app">
 <div id="content" class="container-fluid" ng-controller="domainCtrl">
-    <!--<vivagraph data="graphData" set-vg="setVg(vg)">-->
     <vivagraph viva-graph="vivaGraph">
 
         <div class="col-sm-4 pull-right actionsPanel">
@@ -99,7 +97,11 @@
                             </div>
                         </accordion-group>
                         <accordion-group heading="Preview pane">
-                            <strong class=""><span ng-bind="previewNodeID"></span></strong>
+                            id: {{nodeData.id}}
+                            <br>
+                            uid: {{nodeData.uid}}
+                            <br>
+                            arch: {{nodeData.arch}}
                         </accordion-group>
                     </accordion>
                 </div>

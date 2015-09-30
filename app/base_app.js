@@ -69,9 +69,25 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
         //this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
         //this.layout = Viva.Graph.Layout.forceDirectedPause(this.graph, layoutSettings);
         this.layout = Viva.Graph.Layout.pausableForceDirected(this.graph);
+      /*this.layout = Viva.Graph.Layout.forceAtlas2(this.graph,{
+        gravity: 1,
+        linLogMode: false,
+        strongGravityMode: false,
+        slowDown: 1,
+        outboundAttractionDistribution: false,
+        iterationsPerRender: 1,
+        barnesHutOptimize: false,
+        barnesHutTheta: 0.5,
+        worker: true
+      });*/
         this.graphics = Viva.Graph.View.webglGraphics();
+        var nodeProgram = new Viva.Graph.View.customWebglNodeProgram();
+        this.graphics.setNodeProgram(nodeProgram);
         this.graphics.node(function (node) {
-            return new Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
+            var img = Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
+            img.marked = Math.random() * 255;
+            img.color = img.color - 255;
+            return img;
         });
         this.events = Viva.Graph.webglInputEvents(this.graphics, this.graph);
     };
@@ -93,6 +109,12 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
                 renderLinks : true,
                 container: this.container
             }).run();
+      /*this.renderer = Viva.Graph.View.pixelRenderer(this.graph,
+        {
+          container: this.container,
+          settings: false,
+          is3d: false
+        });*/
     };
 
     return vivaGraph;
@@ -123,8 +145,22 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
     $scope.graphData = [];
     $scope.pauseRendering = true;
     $scope.pauseLayout = true;
-    $scope.previewNodeID = undefined;
+    $scope.nodeData = undefined;
     $scope.vivaGraph = new vivaGraphFactory();
+
+        $scope.vivaGraph.events.mouseEnter(function (node) {
+            //console.log('Mouse entered node: ' + node.id);
+            $scope.nodeData = node.data;
+            $scope.$apply();
+        }).mouseLeave(function (node) {
+            //console.log('Mouse left node: ' + node.id);
+            $scope.nodeData = undefined;
+            $scope.$apply();
+        }).dblClick(function (node) {
+            //console.log('Double click on node: ' + node.id);
+        }).click(function (node) {
+            //console.log('Single click on node: ' + node.id);
+        });
 
     $scope.reset = function() {
         //$scope.vivaGraph.renderer.pause();
@@ -156,7 +192,6 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
 
     $scope.updateGraph = function(queryObject) {
         var graph = $scope.vivaGraph.graph;
-        var renderer = $scope.vivaGraph.renderer;
         var queryStrings = neo4jQueryBuilder(queryObject);
         var modalInstance;
 
@@ -223,7 +258,17 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                     $scope.resumeGraphRendering();
                     modalInstance.close();
                 },
-                patterns: ['node:graph.nodes.*', 'node:graph.relationships.*', 'errors']
+                patterns: {'node:graph.nodes.*': function (node) {
+                  graph.addNode(node.id, node.properties);
+                  $scope.domainCount++;
+                  $scope.$apply();
+                }, 'node:graph.relationships.*': function (node) {
+                  graph.addLink(node.startNode, node.endNode);
+                  $scope.relationshipCount++;
+                  $scope.$apply();
+                }, 'errors': function (node) {
+                  console.log(node);
+                }}
             };
 
             OboeWrapper(req,
@@ -231,7 +276,7 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                 //    handle errors
                 }, function (nodeObj) {
                 //    handle notify
-                    var node = nodeObj.node;
+/*                    var node = nodeObj.node;
                     //console.log(node +" found by pattern: "+nodeObj.pattern);
                     switch (nodeObj.pattern) {
                         case 'node:graph.nodes.*':
@@ -246,12 +291,18 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                             break;
                         case 'errors':
                             break;
-                    }
+                    }*/
                 }
             );
         };
 
-        countReq.pattern = 'row';
+        countReq.patterns = {
+          'node:row': function (node) {
+            $scope.domainTotalCount = node[0];
+            $scope.relationshipTotalCount = node[1];
+            $scope.$apply();
+          }
+        };
 
         OboeWrapper(countReq,
             function(error){
@@ -291,26 +342,26 @@ app.directive('vivagraph', [function () {
 }]);
 
 app.value('archColors',{
-    'alpha arrays': '#000000',
-    'alpha bundles': '#00FF00',
-    'alpha superhelices': '#0000FF',
-    'alpha duplicates or obligate multimers': '#FF0000',
-    'alpha complex topology': '#01FFFE',
-    'beta barrels': '#FFA6FE',
-    'beta meanders': '#FFDB66',
-    'beta sandwiches': '#006401',
-    'beta duplicates or obligate multimers': '#010067',
-    'beta complex topology': '#95003A',
-    'a+b two layers': '#007DB5',
-    'a+b three layers': '#FF00F6',
-    'a+b four layers': '#FFEEE8',
-    'a+b complex topology': '#774D00',
-    'a+b duplicates or obligate multimers': '#90FB92',
-    'a/b barrels': '#0076FF',
-    'a/b three-layered sandwiches': '#D5FF00',
-    'mixed a+b and a/b': '#FF937E',
-    'few secondary structure elements': '#6A826C',
-    'extended segments': '#FF029D'
+  'alpha arrays': '#FE8900',
+  'alpha bundles': '#00FF00',
+  'alpha superhelices': '#0000FF',
+  'alpha duplicates or obligate multimers': '#FF0000',
+  'alpha complex topology': '#01FFFE',
+  'beta barrels': '#FFA6FE',
+  'beta meanders': '#FFDB66',
+  'beta sandwiches': '#006401',
+  'beta duplicates or obligate multimers': '#010067',
+  'beta complex topology': '#95003A',
+  'a+b two layers': '#007DB5',
+  'a+b three layers': '#FF00F6',
+  'a+b four layers': '#FFEEE8',
+  'a+b complex topology': '#774D00',
+  'a+b duplicates or obligate multimers': '#90FB92',
+  'a/b barrels': '#0076FF',
+  'a/b three-layered sandwiches': '#D5FF00',
+  'mixed a+b and a/b': '#FF937E',
+  'few secondary structure elements': '#6A826C',
+  'extended segments': '#FF029D'
 });
 
 app.value('layoutSettings', {

@@ -3,60 +3,131 @@
  */
 "use strict";
 
-var app = angular.module("app", ['ngAnimate', 'ui.bootstrap', 'ui.bootstrap.collapse','ngOboe']);
+var app = angular.module("app", ['ui.select', 'ngSanitize', 'ngAnimate', 'ui.bootstrap', 'ui.bootstrap.collapse','ngOboe']);
 
 app.service('neo4jQueryBuilder', [function() {
      return function(queryObject) {
-        var statmentString = "MATCH (d:ECODDomain)-[r:DISTANCE]-()";
-        var whereAdded = false;
-        var addAnd = false;
-        angular.forEach(queryObject, function(value, key) {
-            var lowerAdded = false;
-            if (value && (value.lower || value.upper)) {
-                if (!whereAdded) {
-                    statmentString+=" WHERE (";
-                    whereAdded = true;
-                }
-                if (addAnd) {
-                    statmentString+=" AND"
-                }
-                statmentString+=" (";
-                if (value.lower) {
-                    statmentString+=" " + value.lower + " <= r." + key;
-                    lowerAdded = true;
-                }
-                if (value.upper) {
-                    if (lowerAdded) {
-                        statmentString+=" AND"
-                    }
-                    statmentString+=" r." + key +" <= " + value.upper;
-                }
-                statmentString+=" )";
+       var api = {
+         getDomains: getDomains
+       };
+       return api;
 
-                addAnd = true;
-            }
-        });
-        if (whereAdded) {
-            statmentString+= " )";
-        }
-        var queryString=statmentString + " RETURN DISTINCT r";
-        var queryCountString = statmentString + " RETURN COUNT(d) AS domainCount, COUNT(DISTINCT r) AS relationshipCount";
-        var query_data_object = {
-            "statements" : [ {
-                "statement" : queryString,
-                "resultDataContents" : [ "graph" ]
-            } ]
-        };
-        var query_count_data_object = {
-            "statements" : [ {
-                "statement" : queryCountString,
-                "resultDataContents" : [ "row" ]
-            } ]
-        };
-        return {
-            queryString: JSON.stringify(query_data_object),
-            queryCountString: JSON.stringify(query_count_data_object)
-        };
+       function getDomains() {
+         var statmentString = "MATCH (d:ECODDomain)-[r:DISTANCE]-()";
+         /*var whereAdded = false;
+         var addAnd = false;
+         angular.forEach(queryObject, function (value, key) {
+           var lowerAdded = false;
+           if (value && (value.lower || value.upper)) {
+             if (!whereAdded) {
+               statmentString += " WHERE (";
+               whereAdded = true;
+             }
+             if (addAnd) {
+               statmentString += " AND"
+             }
+             statmentString += " (";
+             if (value.lower) {
+               statmentString += " " + value.lower + " <= r." + key;
+               lowerAdded = true;
+             }
+             if (value.upper) {
+               if (lowerAdded) {
+                 statmentString += " AND"
+               }
+               statmentString += " r." + key + " <= " + value.upper;
+             }
+             statmentString += " )";
+
+             addAnd = true;
+           }
+         });
+         if (whereAdded) {
+           statmentString += " )";
+         }*/
+         statmentString += buildRelationWhere();
+         var queryString = statmentString + " RETURN DISTINCT r";
+         var queryCountString = statmentString + " RETURN COUNT(d) AS domainCount, COUNT(DISTINCT r) AS relationshipCount";
+         var query_data_object = {
+           "statements": [{
+             "statement": queryString,
+             "resultDataContents": ["graph"]
+           }]
+         };
+         var query_count_data_object = {
+           "statements": [{
+             "statement": queryCountString,
+             "resultDataContents": ["row"]
+           }]
+         };
+         return {
+           queryString: JSON.stringify(query_data_object),
+           queryCountString: JSON.stringify(query_count_data_object)
+         };
+       }
+       function buildRelationWhere() {
+         var statmentString = " ";
+         var whereAdded = false;
+         var addAnd = false;
+         angular.forEach(queryObject, function (value, key) {
+           var lowerAdded = false;
+           if (value && (value.lower || value.upper)) {
+             if (!whereAdded) {
+               statmentString += " WHERE (";
+               whereAdded = true;
+             }
+             if (addAnd) {
+               statmentString += " AND"
+             }
+             statmentString += " (";
+             if (value.lower) {
+               statmentString += " " + value.lower + " <= r." + key;
+               lowerAdded = true;
+             }
+             if (value.upper) {
+               if (lowerAdded) {
+                 statmentString += " AND"
+               }
+               statmentString += " r." + key + " <= " + value.upper;
+             }
+             statmentString += " )";
+
+             addAnd = true;
+           }
+         });
+         if (whereAdded) {
+           statmentString += " )";
+         }
+         return statmentString;
+       }
+       function getLigands() {
+         var statmentString = "MATCH (d:ECODDomain)-[r:DISTANCE]-()";
+         statmentString += buildRelationWhere();
+         var queryString = statmentString + "WITH d MATCH (d)-[:BINDS]-(l:Ligand) return DISTINCT l";
+         var query_data_object = {
+           "statements": [{
+             "statement": queryString,
+             "resultDataContents": ["row"]
+           }]
+         };
+         return {
+           queryString: JSON.stringify(query_data_object)
+         }
+       }
+       function getDomainsBindingLigand() {
+         var statmentString = "MATCH (d:ECODDomain)-[r:DISTANCE]-()";
+         statmentString += buildRelationWhere();
+         var queryString = statmentString + "WITH d MATCH (d)-[:BINDS]-(l:Ligand {id: "+queryObject.ligand+"}) return DISTINCT d";
+         var query_data_object = {
+           "statements": [{
+             "statement": queryString,
+             "resultDataContents": ["graph"]
+           }]
+         };
+         return {
+           queryString: JSON.stringify(query_data_object)
+         }
+       }
     };
 }]);
 
@@ -69,7 +140,7 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
         //this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
         //this.layout = Viva.Graph.Layout.forceDirectedPause(this.graph, layoutSettings);
         this.layout = Viva.Graph.Layout.pausableForceDirected(this.graph);
-      /*this.layout = Viva.Graph.Layout.forceAtlas2(this.graph,{
+/*      this.layout = Viva.Graph.Layout.forceAtlas2(this.graph,{
         gravity: 1,
         linLogMode: false,
         strongGravityMode: false,
@@ -78,14 +149,20 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
         iterationsPerRender: 1,
         barnesHutOptimize: false,
         barnesHutTheta: 0.5,
-        worker: true
+        worker: false
       });*/
         this.graphics = Viva.Graph.View.webglGraphics();
         var nodeProgram = new Viva.Graph.View.customWebglNodeProgram();
         this.graphics.setNodeProgram(nodeProgram);
         this.graphics.node(function (node) {
             var img = Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
-            img.marked = Math.random() * 255;
+            img.marked = function() {
+              var val = node.data.marked;
+              if (val) {
+                return val;
+              }
+              return 0;
+            };
             img.color = img.color - 255;
             return img;
         });
@@ -141,11 +218,13 @@ app.service('OboeWrapper', ['Oboe', function(Oboe) {
 app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal', 'layoutSettings',
     function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal, layoutSettings) {
 
-    $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined};
+    $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined, ligand: undefined};
     $scope.graphData = [];
+    $scope.ligands = [];
     $scope.pauseRendering = true;
     $scope.pauseLayout = true;
     $scope.nodeData = undefined;
+
     $scope.vivaGraph = new vivaGraphFactory();
 
         $scope.vivaGraph.events.mouseEnter(function (node) {
@@ -192,7 +271,7 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
 
     $scope.updateGraph = function(queryObject) {
         var graph = $scope.vivaGraph.graph;
-        var queryStrings = neo4jQueryBuilder(queryObject);
+        var queryStrings = neo4jQueryBuilder(queryObject).getDomains();
         var modalInstance;
 
         var countReq = {
@@ -255,8 +334,57 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                 done: function() {
                     console.log("Done");
                     graph.endUpdate();
+/*
+                    var layout = Viva.Graph.Layout.forceAtlas2(graph,{
+                   gravity: 1,
+                   linLogMode: false,
+                   strongGravityMode: false,
+                   slowDown: 1,
+                   outboundAttractionDistribution: false,
+                   iterationsPerRender: 1,
+                   barnesHutOptimize: false,
+                   barnesHutTheta: 0.5,
+                   worker: true
+                   });
+                   $scope.vivaGraph.renderer = Viva.Graph.View.renderer(graph,
+                   {
+                   layout     : layout,
+                   graphics   : $scope.vivaGraph.graphics,
+                   renderLinks : true,
+                   container: $scope.vivaGraph.container
+                   }).run();
+                   $scope.pauseGraphRendering();
+                  */
                     $scope.resumeGraphRendering();
                     modalInstance.close();
+                    var FADreq = {
+                      method: 'POST',
+                      url: 'http://localhost:7474/db/data/transaction/commit',
+                      headers: {
+                        Accept: "application/json; charset=UTF-8",
+                        'Content-Type': 'application/json',
+                        'X-Stream': 'true'
+                      },
+                      body: JSON.stringify(
+                        {
+                          "statements" : [ {
+                            "statement" : 'MATCH (d:ECODDomain)-[r:DISTANCE]-() WHERE r.rmsd <= 0.1 WITH r,d MATCH (d)-[:BINDS]-(l {id: "FAD"}) return d',
+                            "resultDataContents" : [ "graph" ]
+                          } ]
+                        }
+                      ),
+                      patterns: {'node:graph.nodes.*': function (node) {
+                        graph.getNode(node.id).data.marked = 1;
+                      }}
+                    };
+                  OboeWrapper(FADreq,
+                    function (error) {
+                      
+                    },
+                    function (nodeObj) {
+                      
+                    }
+                  );
                 },
                 patterns: {'node:graph.nodes.*': function (node) {
                   graph.addNode(node.id, node.properties);

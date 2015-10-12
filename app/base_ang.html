@@ -13,6 +13,8 @@
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
     <script src="bower_components/angular-ui-select/dist/select.js"></script>
     <script src="bower_components/angular-oboe/src/angular-oboe.js"></script>
+    <script src="bower_components/papaparse/papaparse.js"></script>
+    <script src="bower_components/angular-papaparse/dist/js/angular-PapaParse.js"></script>
     <script src="base_app.js"></script>
     <link href="bower_components/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
     <link href="bower_components/angular-bootstrap/ui-bootstrap-csp.css" rel="stylesheet">
@@ -111,11 +113,13 @@
 
                                 <form name="ds" class="css-form" novalidate>
                                     <div class="input-group">
-                                        <textarea class="form-control" rows="3" ng-model="selectionInput"></textarea>
+                                        <!--<textarea class="form-control" rows="3" ng-model="selectionInput"></textarea>-->
+                                        <span class="input-group-addon">ECOD</span>
+                                            <input type="file" ng-model-instant id="fileToUpload" multiple onchange="angular.element(this).scope().setECODFile(this)" />
                                     </div>
                                     <br>
                                     <div class="input-group">
-                                        <button class="btn btn-primary" ng-click="clearMarking()">Cleat selection</button>
+                                        <button class="btn btn-primary" ng-click="clearMarking()">Clear selection</button>
                                         <button class="btn btn-primary" ng-click="markDomains(selectionInput)">Select matching domains</button>
                                     </div>
                                 </form>

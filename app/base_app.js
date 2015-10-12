@@ -3,7 +3,7 @@
  */
 "use strict";
 
-var app = angular.module("app", ['ui.select', 'ngSanitize', 'ngAnimate', 'ui.bootstrap', 'ui.bootstrap.collapse','ngOboe']);
+var app = angular.module("app", ['ngPapaParse', 'ui.select', 'ngSanitize', 'ngAnimate', 'ui.bootstrap', 'ui.bootstrap.collapse','ngOboe']);
 
 app.service('neo4jQueryBuilder', [function() {
      return function(queryObject) {
@@ -199,8 +199,8 @@ app.service('OboeWrapper', ['Oboe', function(Oboe) {
     };
 }]);
 
-app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal', 'layoutSettings',
-    function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal, layoutSettings) {
+app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal', 'layoutSettings', 'Papa',
+    function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal, layoutSettings, Papa) {
 
     $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined, ligand: undefined};
     $scope.graphData = [];
@@ -366,11 +366,15 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
       if (!selectionInput)
         return;
       var selectionObj;
-      try {
-        selectionObj = JSON.parse(selectionInput);
-      } catch (e) {
-        console.log(e);
-        return;
+      if (typeof selectionInput === 'string') {
+        try {
+          selectionObj = JSON.parse(selectionInput);
+        } catch (e) {
+          console.log(e);
+          return;
+        }
+      } else {
+        selectionObj = selectionInput;
       }
       var statements = [];
 
@@ -423,6 +427,24 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         node.data.marked = 0;
       });
     };
+
+    $scope.setECODFile = function (element) {
+      console.log('files:', element.files);
+      var domain_ids = [];
+      Papa.parse(element.files[0], {
+        worker: true,
+        header:true,
+        dynamicTyping: true,
+        step: function(row) {
+          //console.log("Row:", row.data);
+          domain_ids.push(row.data[0]);
+        },
+        complete: function() {
+          console.log("All done!");
+          $scope.markDomains({"ecod": domain_ids});
+        }
+      });
+    }
 }]);
 
 app.controller('graphLoadingModalController',['$scope', '$modalInstance', 'counters', function ($scope, $modalInstance, counters) {

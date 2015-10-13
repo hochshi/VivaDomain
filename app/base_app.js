@@ -9,9 +9,14 @@ app.service('neo4jQueryBuilder', [function() {
      return function(queryObject) {
        var api = {
          getDomains: getDomains,
-         getMultiSPDomains: getMultiSPDomains,
-         getSPDomains: getSPDomains,
-         getMultiECODDomains: getMultiECODDomains
+         getMultiSelectionDomains: getMultiSelectionDomains,
+         getSelectionDomains: getSelectionDomains
+       };
+       var statmentTable = {
+         sp: "MATCH (sp:SWISSProt)-[r:MAPPED]-(p:PDBChain)-[:MAPPED]-(d:ECODDomain) WHERE sp.id = { id } AND (d)-[:DISTANCE]-() AND  ( (({start}+{end})< 0) XOR (r.spStart <= {start} AND r.spEnd >= {end}) ) return id(d)",
+         pdb: "MATCH MATCH (p:PDBEntry)-[:SUBCHAIN]-(:PDBChain)-[:MAPPED]-(d:ECODDomain) where p.id = { id } return id(d)",
+         pdbc: "MATCH (c:PDBChain)-[r:MAPPED]-(d:ECODDomain) WHERE c.id = { id } AND (d)-[:DISTANCE]-() AND  ( (({start}+{end})< 0) XOR (r.seqidStart <= {start} AND r.seqidEnd >= {end}) ) return id(d)",
+         ecod: "MATCH (d:ECODDomain) WHERE d.id = {id} return id(d)"
        };
        return api;
 
@@ -72,7 +77,7 @@ app.service('neo4jQueryBuilder', [function() {
          }
          return statmentString;
        }
-       function getSPDomains(sp) {
+/*       function getSPDomains(sp) {
          var statmentString = "MATCH (sp:SWISSProt)-[r:MAPPED]-(p:PDBChain)-[:MAPPED]-(d:ECODDomain) WHERE sp.id = { spid } AND (d)-[:DISTANCE]-() AND  ( (({start}+{end})< 0) XOR (r.spStart <= {start} AND r.spEnd >= {end}) ) return id(d)";
          var params = {
            "spid": sp.id,
@@ -112,6 +117,62 @@ app.service('neo4jQueryBuilder', [function() {
          });
          return statements;
        }
+       function getMultiPDBDomains(pdbs) {
+         var statements = [];
+         angular.forEach(pdbs, function (pdb) {
+           statements.push(getPDBDomains(pdb));
+         });
+         return statements;
+       }
+       function getPDBDomains(pdb) {
+         var statmentString = "MATCH MATCH (p:PDBEntry)-[:SUBCHAIN]-(:PDBChain)-[:MAPPED]-(d:ECODDomain) where p.id =~ '(?){ pdbid }' return id(d)";
+         var params = {
+           "spid": pdb.id,
+           "start": (pdb.start ? pdb.start : -1),
+           "end": (pdb.end ? pdb.end : -1)
+         };
+         var query_data_object = {
+           "statement": statmentString,
+           "parameters": params,
+           "resultDataContents": ["row"]
+         };
+         return query_data_object;
+       }*/
+       function getMultiSelectionDomains(ids, type) {
+         var statements = [];
+         angular.forEach(ids, function (id) {
+           statements.push(getSelectionDomains(id, type));
+         });
+         return statements;
+       }
+       function getSelectionDomains(id, type) {
+         var statmentString = statmentTable[type];
+         var params = {
+           "id": ((type == "pdb" || type == "pdbc") ? normalizePdb(id.id): id.id),
+           "start": (id.start ? id.start : -1),
+           "end": (id.end ? id.end : -1)
+         };
+         var query_data_object = {
+           "statement": statmentString,
+           "parameters": params,
+           "resultDataContents": ["row"]
+         };
+         return query_data_object;
+       }
+       function normalizePdb(pdb) {
+         var res = pdb.split('.');
+         try {
+           res[0] = res[0].toLowerCase();
+         } catch (e) {
+           return undefined;
+         }
+         try {
+           res[1] = res[1].toUpperCase();
+           return res[0]+'.'+res[1];
+         } catch (e) {
+           return res[0];
+         }
+       }
     };
 }]);
 
@@ -135,18 +196,62 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
         barnesHutTheta: 0.5,
         worker: false
       });*/
+      var customNode = function (size, color) {
+        function parseColor(color) {
+          var parsedColor = 0x009ee8ff;
+
+          if (typeof color === 'string' && color) {
+            if (color.length === 4) { // #rgb
+              color = color.replace(/([^#])/g, '$1$1'); // duplicate each letter except first #.
+            }
+            if (color.length === 9) { // #rrggbbaa
+              parsedColor = parseInt(color.substr(1), 16);
+            } else if (color.length === 7) { // or #rrggbb.
+              parsedColor = (parseInt(color.substr(1), 16) << 8) | 0xff;
+            } else {
+              throw 'Color expected in hex format with preceding "#". E.g. #00ff00. Got value: ' + color;
+            }
+          } else if (typeof color === 'number') {
+            parsedColor = color;
+          }
+
+          return parsedColor;
+        }
+
+        return {
+          /**
+           * Gets or sets size of the square side.
+           */
+          size: typeof size === 'number' ? size : 10,
+
+          /**
+           * Gets or sets color of the square.
+           */
+          get color () {
+            try {
+              if (this.node.data.hide) return parseColor('#D8D8D8');
+              return parseColor(color);
+            } catch (e) {
+            //
+            }
+          },
+          set color (color) {
+            color = color;
+          },
+          marked: function() {
+            var val = this.node.data.marked;
+            if (val) {
+              return val;
+            }
+            return 0;
+          }
+        };
+      };
         this.graphics = Viva.Graph.View.webglGraphics();
         var nodeProgram = new Viva.Graph.View.customWebglNodeProgram();
         this.graphics.setNodeProgram(nodeProgram);
         this.graphics.node(function (node) {
-            var img = Viva.Graph.View.webglSquare(10, archColors[node.data.arch]);
-            img.marked = function() {
-              var val = node.data.marked;
-              if (val) {
-                return val;
-              }
-              return 0;
-            };
+            var img = customNode(10, archColors[node.data.arch]);
             img.color = img.color - 255;
             return img;
         });
@@ -202,6 +307,7 @@ app.service('OboeWrapper', ['Oboe', function(Oboe) {
 app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryBuilder', 'OboeWrapper', '$modal', 'layoutSettings', 'Papa',
     function( $scope, $http, vivaGraphFactory, neo4jQueryBuilder, OboeWrapper, $modal, layoutSettings, Papa) {
 
+    var files = {ecodFile: undefined, pdbfile: undefined, pdbcfile: undefined, spfile: undefined};
     $scope.query = {rmsd: undefined, psim: undefined, pid: undefined, length: undefined, ligand: undefined};
     $scope.graphData = [];
     $scope.ligands = [];
@@ -362,8 +468,8 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         );
     };
 
-    $scope.markDomains = function(selectionInput) {
-      if (!selectionInput)
+    $scope.markDomains = function(selectionInput, type) {
+      /*if (!selectionInput)
         return;
       var selectionObj;
       if (typeof selectionInput === 'string') {
@@ -375,18 +481,20 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         }
       } else {
         selectionObj = selectionInput;
-      }
+      }*/
       var statements = [];
 
-      try {
+      /*try {
         statements = statements.concat(neo4jQueryBuilder($scope.query).getMultiSPDomains(selectionObj.sp));
         //statements.concat(neo4jQueryBuilder($scope.query).getMultiPDBDomains(selectionObj.pdb));
-        statements = statements.concat(neo4jQueryBuilder($scope.query).getMultiECODDomains(selectionObj.ecod));
+        //statements.concat(neo4jQueryBuilder($scope.query).getMultiPDBCDomains(selectionObj.pdbc));
+        //statements = statements.concat(neo4jQueryBuilder($scope.query).getMultiECODDomains(selectionObj.ecod));
       } catch (e) {
         console.log(e);
         return;
-      }
+      }*/
 
+      statements = neo4jQueryBuilder($scope.query).getMultiSelectionDomains(selectionInput, type);
       var req = {
         method: 'POST',
         url: 'http://localhost:7474/db/data/transaction/commit',
@@ -399,6 +507,9 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         body: JSON.stringify({"statements": statements}),
         start: function (stream) {
           console.log("Selection Start");
+          $scope.vivaGraph.graph.forEachNode(function (node) {
+            node.data.hide = true;
+          });
         },
         done: function() {
           console.log("Selection Done");
@@ -406,7 +517,8 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
         patterns: {'node:row': function (nodeId) {
           var node = $scope.vivaGraph.graph.getNode(nodeId);
           if (node) {
-            node.data.marked = 1;
+            //node.data.marked = 1;
+            node.data.hide = false;
           }
         }, 'errors': function (node) {
           console.log(nodeId);
@@ -424,27 +536,47 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
 
     $scope.clearMarking = function () {
       $scope.vivaGraph.graph.forEachNode(function (node) {
-        node.data.marked = 0;
+        //node.data.marked = 0;
+        node.data.hide = false;
       });
     };
 
-    $scope.setECODFile = function (element) {
+    $scope.setFile = function (element, type) {
+      files[type] = element.files[0];
+    };
+
+/*    $scope.setECODFile = function (element) {
       console.log('files:', element.files);
-      var domain_ids = [];
-      Papa.parse(element.files[0], {
+      ecodFile = element.files[0];
+    };
+
+      $scope.setPDBFile = function (element) {
+        console.log('files:', element.files);
+        pdbfile = element.files[0];
+      };*/
+
+    function parseFile(file, type) {
+      var ids = [];
+      Papa.parse(file, {
         worker: true,
         header:true,
         dynamicTyping: true,
         step: function(row) {
           //console.log("Row:", row.data);
-          domain_ids.push(row.data[0]);
+          ids.push(row.data[0]);
         },
         complete: function() {
           console.log("All done!");
-          $scope.markDomains({"ecod": domain_ids});
+          $scope.markDomains(ids, type);
         }
       });
     }
+
+    $scope.csvMarkDomains = function() {
+      angular.forEach(files, function (value, key) { //value - file, key - type: ecod, pdbc, pdb or sp
+        parseFile(value, key);
+      })
+    };
 }]);
 
 app.controller('graphLoadingModalController',['$scope', '$modalInstance', 'counters', function ($scope, $modalInstance, counters) {

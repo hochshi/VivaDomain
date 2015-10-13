@@ -113,14 +113,25 @@
 
                                 <form name="ds" class="css-form" novalidate>
                                     <div class="input-group">
-                                        <!--<textarea class="form-control" rows="3" ng-model="selectionInput"></textarea>-->
-                                        <span class="input-group-addon">ECOD</span>
-                                            <input type="file" ng-model-instant id="fileToUpload" multiple onchange="angular.element(this).scope().setECODFile(this)" />
+                                        <span class="input-group-addon">ECODs</span>
+                                            <input type="file" ng-model-instant id="ECODfileToUpload" multiple onchange="angular.element(this).scope().setFile(this, 'ecod')" />
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-addon">PDB Chains</span>
+                                        <input type="file" ng-model-instant id="PDBChainfileToUpload" multiple onchange="angular.element(this).scope().setFile(this, 'pdbc')" />
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-addon">PDBs</span>
+                                        <input type="file" ng-model-instant id="PDBfileToUpload" multiple onchange="angular.element(this).scope().setFile(this, 'pdb')" />
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-addon">SP</span>
+                                        <input type="file" ng-model-instant id="SPfileToUpload" multiple onchange="angular.element(this).scope().setFile(this, 'sp')" />
                                     </div>
                                     <br>
                                     <div class="input-group">
                                         <button class="btn btn-primary" ng-click="clearMarking()">Clear selection</button>
-                                        <button class="btn btn-primary" ng-click="markDomains(selectionInput)">Select matching domains</button>
+                                        <button class="btn btn-primary" ng-click="csvMarkDomains()">Select matching domains</button>
                                     </div>
                                 </form>
                             </div>

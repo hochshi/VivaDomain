@@ -255,8 +255,7 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
             img.color = img.color - 255;
             return img;
         });
-        this.events = Viva.Graph.webglInputEvents(this.gr:q
-      aphics, this.graph);
+        this.events = Viva.Graph.webglInputEvents(this.graphics, this.graph);
     };
 
     vivaGraph.prototype.dispose = function () {

@@ -255,7 +255,8 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
             img.color = img.color - 255;
             return img;
         });
-        this.events = Viva.Graph.webglInputEvents(this.graphics, this.graph);
+        this.events = Viva.Graph.webglInputEvents(this.gr:q
+      aphics, this.graph);
     };
 
     vivaGraph.prototype.dispose = function () {
@@ -370,8 +371,8 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
             url: 'http://localhost:7474/db/data/transaction/commit',
             headers: {
                 Accept: "application/json; charset=UTF-8",
-                'Content-Type': 'application/json',
-                'X-Stream': 'true'
+                'Content-Type': 'application/json'
+                //'X-Stream': 'true'
             },
             //data: request_data_string
             body: queryStrings.queryCountString
@@ -411,8 +412,8 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                 url: 'http://localhost:7474/db/data/transaction/commit',
                 headers: {
                     Accept: "application/json; charset=UTF-8",
-                    'Content-Type': 'application/json',
-                    'X-Stream': 'true'
+                    'Content-Type': 'application/json'
+                    //'X-Stream': 'true'
                     },
                 //data: request_data_string
                 body: queryStrings.queryString,

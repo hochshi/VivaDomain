@@ -181,10 +181,62 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
     //var vivaGraph = function ( container, neo4j_graph ) {
 
         this.container = undefined;
-        this.graph = Viva.Graph.graph();
+        var vivaGraph = Viva.Graph.graph();
+        this.graph = vivaGraph;
         //this.layout = Viva.Graph.Layout.forceDirected(this.graph, layoutSettings);
         //this.layout = Viva.Graph.Layout.forceDirectedPause(this.graph, layoutSettings);
-        this.layout = Viva.Graph.Layout.pausableForceDirected(this.graph);
+      /*var springForce = function (options) {
+        //var random = require('ngraph.random').random(42);
+
+        /!*options = merge(options, {
+          springCoeff: 0.0002,
+          springLength: 80
+        });*!/
+        options.springCoeff = (options.springCoeff) ? options.springCoeff : 0.0002;
+        options.springLength = (options.springLength) ? options.springLength : 80;
+
+        var api = {
+          /!**
+           * Upsates forces acting on a spring
+           *!/
+          update : function (spring) {
+            var body1 = spring.from,
+              body2 = spring.to,
+              length = spring.length < 0 ? options.springLength : spring.length,
+              dx = body2.pos.x - body1.pos.x,
+              dy = body2.pos.y - body1.pos.y,
+              r = Math.sqrt(dx * dx + dy * dy);
+
+            //if (r === 0) {
+            //  dx = (random.nextDouble() - 0.5) / 50;
+            //  dy = (random.nextDouble() - 0.5) / 50;
+            //  r = Math.sqrt(dx * dx + dy * dy);
+            //}
+
+            var d = r - length;
+            var coeff = ((!spring.coeff || spring.coeff < 0) ? options.springCoeff : spring.coeff) *( d / r )* spring.weight;
+            //var coeff = ((!spring.coeff || spring.coeff < 0) ? options.springCoeff : spring.coeff) *( d/r )* spring.weight;
+
+            body1.force.x += coeff * dx;
+            body1.force.y += coeff * dy;
+
+            body2.force.x -= coeff * dx;
+            body2.force.y -= coeff * dy;
+          }
+        };
+
+        return api;
+      };*/
+      var physicsSettings = {
+        springLength: 30,
+        springCoeff: 0.0014,
+        gravity: -1.0,
+        theta: 0.8,
+        dragCoeff: 0.08,
+        timeStep: 20
+        //createSpringForce: springForce
+      };
+        this.layout = Viva.Graph.Layout.pausableForceDirected(this.graph, physicsSettings);
 /*      this.layout = Viva.Graph.Layout.forceAtlas2(this.graph,{
         gravity: 1,
         linLogMode: false,
@@ -238,18 +290,104 @@ app.factory('vivaGraphFactory', ['$q', 'layoutSettings', 'archColors', function(
           set color (color) {
             color = color;
           },
-          marked: function() {
+          get marked () {
             var val = this.node.data.marked;
             if (val) {
               return val;
             }
             return 0;
+          },
+          set marked (val) {
+            this.node.data.marked = val;
+          },
+          get extraParameters () {
+            return this.marked;
           }
+          /*marked: function() {
+            var val = this.node.data.marked;
+            if (val) {
+              return val;
+            }
+            return 0;
+          }*/
         };
       };
-        this.graphics = Viva.Graph.View.webglGraphics();
+      //var glLinkProg = Viva.Graph.View.webglLinkProgram();
+      var vGraphics = Viva.Graph.View.webglGraphics();
+      this.graphics = vGraphics;
+      /*var renderMingleLinks = function () {
+
+        if (this.omitLinksRendering) {
+          return;
+        }
+
+        var nodes = [];
+        var toPos = {x: 0, y: 0};
+        var fromPos = {x: 0, y: 0};
+        var pos;
+/!*        for (var i = 0; i < linksCount; ++i) {
+          var ui = links[i];
+          var pos = ui.pos.from;
+          fromPos.x = pos.x;
+          fromPos.y = -pos.y;
+          pos = ui.pos.to;
+          toPos.x = pos.x;
+          toPos.y = -pos.y;
+          nodes.push({
+            id: ui.id,
+            name: ui.id,
+            data: {
+              coords: [fromPos.x, fromPos.y, toPos.x, toPos.y]
+            }
+          });
+        }*!/
+        //return;
+        vivaGraph.forEachLink(function(link) {
+          var ui = vGraphics.getLinkUI(link.id);
+          //console.log(ui);
+          pos = ui.pos.from;
+          fromPos.x = pos.x;
+          fromPos.y = pos.y;
+          pos = ui.pos.to;
+          toPos.x = pos.x;
+          toPos.y = pos.y;
+          nodes.push({
+            id: ui.id,
+            name: ui.id,
+            color: ui.color,
+            data: {
+              coords: [fromPos.x, fromPos.y, toPos.x, toPos.y]
+            }
+          });
+        });
+        if (!nodes.length) {
+          return;
+        }
+        var bundle = new Bundler();
+        bundle.setNodes(nodes);
+        bundle.buildNearestNeighborGraph();
+        bundle.MINGLE();
+        bundle.graph.each(function (node) {
+          var edges = node.unbundleEdges(1);
+          for (var i= 0, l = edges.length; i < l; i++) {
+            var e = edges[i];
+            for(var j= 1, n = e.length; j<n; j++) {
+              //var pos = e[j].unbundledPos;
+              pos = e[j-1].unbundledPos;
+              fromPos.x = pos[0];
+              fromPos.y = -pos[1];
+              pos = e[j].unbundledPos;
+              toPos.x = pos[0];
+              toPos.y = -pos[1];
+              glLinkProg.position({id: node.id, color: 3014898687}, fromPos, toPos);
+            }
+          }
+        });
+      };*/
+        //this.graphics.renderLinks = renderMingleLinks;
         var nodeProgram = new Viva.Graph.View.customWebglNodeProgram();
         this.graphics.setNodeProgram(nodeProgram);
+        //this.graphics.setLinkProgram(glLinkProg);
         this.graphics.node(function (node) {
             var img = customNode(10, archColors[node.data.arch]);
             img.color = img.color - 255;
@@ -313,23 +451,29 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
     $scope.ligands = [];
     $scope.pauseRendering = true;
     $scope.pauseLayout = true;
-    $scope.nodeData = undefined;
+    $scope.nodeData = undefined, $scope.nodeSelected = false;
     $scope.selectionInput = undefined;
 
     $scope.vivaGraph = new vivaGraphFactory();
 
         $scope.vivaGraph.events.mouseEnter(function (node) {
             //console.log('Mouse entered node: ' + node.id);
+          if (!$scope.nodeSelected) {
             $scope.nodeData = node.data;
             $scope.$apply();
+          }
         }).mouseLeave(function (node) {
             //console.log('Mouse left node: ' + node.id);
-            $scope.nodeData = undefined;
-            $scope.$apply();
+            if (!$scope.nodeSelected) {
+              $scope.nodeData = undefined;
+              $scope.$apply();
+            }
         }).dblClick(function (node) {
             //console.log('Double click on node: ' + node.id);
         }).click(function (node) {
             //console.log('Single click on node: ' + node.id);
+            $scope.nodeSelected = !$scope.nodeSelected;
+            node.data.marked = $scope.nodeSelected? 1 : 0;
         });
 
     $scope.reset = function() {
@@ -425,6 +569,27 @@ app.controller('domainCtrl', ['$scope', '$http','vivaGraphFactory', 'neo4jQueryB
                 done: function() {
                     console.log("Done");
                     graph.endUpdate();
+/*                  var layout = Viva.Graph.Layout.forceAtlas2(graph,{
+                    gravity: 9,
+                    scalingRatio: 8,
+                    linLogMode: false,
+                    strongGravityMode: false,
+                    slowDown: 3,
+                    outboundAttractionDistribution: false,
+                    iterationsPerRender: 1,
+                    barnesHutOptimize: true,
+                    edgeWeightInfluence: 0,
+                    barnesHutTheta: 0.8,
+                    worker: true,
+                    adjustSizes: true
+                  });
+                  $scope.vivaGraph.renderer =  Viva.Graph.View.renderer(graph,
+                    {
+                      layout     : layout,
+                      graphics   : $scope.vivaGraph.graphics,
+                      renderLinks : true,
+                      container: $scope.vivaGraph.container
+                    }).run();*/
                     $scope.resumeGraphRendering();
                     modalInstance.close();
                 },
